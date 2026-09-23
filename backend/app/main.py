@@ -75,6 +75,7 @@ app.include_router(sih_demo.router, prefix=f"{settings.API_V1_STR}/sih", tags=["
 # Backward compatibility routes under /api
 app.include_router(auth.router, prefix="/api/auth", tags=["Legacy Auth"])
 app.include_router(sos.router, prefix="/api/sos", tags=["Legacy SOS"])
+app.include_router(sos.router, prefix="/sos", tags=["Short SOS"])
 app.include_router(incidents.router, prefix="/api/incidents", tags=["Legacy Incidents"])
 app.include_router(shelters_hospitals.router, prefix="/api", tags=["Legacy Facilities"])
 
@@ -105,7 +106,11 @@ async def websocket_sos_endpoint(websocket: WebSocket):
                         "description": "Immediate distress ping via WebSocket"
                     }
                     await ws_manager.broadcast_to_channel("sos", {"type": "CIVILIAN_SOS_TRIGGERED", "payload": new_sos})
+                    await ws_manager.broadcast_global({"type": "CIVILIAN_SOS_TRIGGERED", "payload": new_sos})
+                    await ws_manager.broadcast_to_channel("sos", {"type": "NEW_SOS", "payload": new_sos})
+                    await ws_manager.broadcast_global({"type": "NEW_SOS", "payload": new_sos})
             except Exception as e:
                 print(f"[WebSocket] Message error: {e}")
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
+

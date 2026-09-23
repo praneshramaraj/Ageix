@@ -15,7 +15,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _ageController = TextEditingController(text: '28');
-  final _emergencyContactController = TextEditingController(text: '+91 78069 94340');
+  final _emergencyContactController = TextEditingController(
+    text: '+91 78069 94340',
+  );
   final _passwordController = TextEditingController();
   final _medicalController = TextEditingController();
   String _selectedBloodGroup = 'O+';
@@ -55,7 +57,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: const Color(0xFF07161E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF10232C),
-        title: const Text('Civilian Registration', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Civilian Registration',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -73,7 +78,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
                     prefixIcon: Icon(Icons.person, color: Color(0xFF00D4FF)),
                   ),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Enter full name' : null,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter full name' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -82,9 +88,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Username',
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
-                    prefixIcon: Icon(Icons.account_circle, color: Color(0xFF00D4FF)),
+                    prefixIcon: Icon(
+                      Icons.account_circle,
+                      color: Color(0xFF00D4FF),
+                    ),
                   ),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Enter username' : null,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter username' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -95,7 +105,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
                     prefixIcon: Icon(Icons.phone, color: Color(0xFF00D4FF)),
                   ),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Enter phone number' : null,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Enter phone number' : null,
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -108,9 +119,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Age',
                           labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
-                          prefixIcon: Icon(Icons.cake, color: Color(0xFF00D4FF)),
+                          prefixIcon: Icon(
+                            Icons.cake,
+                            color: Color(0xFF00D4FF),
+                          ),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Enter age' : null,
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Enter age' : null,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -124,7 +139,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
                         ),
                         items: ['Male', 'Female', 'Other']
-                            .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                            .map(
+                              (g) => DropdownMenuItem(value: g, child: Text(g)),
+                            )
                             .toList(),
                         onChanged: (v) => setState(() => _selectedGender = v!),
                       ),
@@ -153,9 +170,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Emergency Contact Phone',
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
-                    prefixIcon: Icon(Icons.contact_phone, color: Color(0xFFFF9900)),
+                    prefixIcon: Icon(
+                      Icons.contact_phone,
+                      color: Color(0xFFFF9900),
+                    ),
                   ),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Enter emergency contact' : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? 'Enter emergency contact'
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -164,7 +186,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Medical Notes (Allergies, Conditions)',
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
-                    prefixIcon: Icon(Icons.medical_services, color: Color(0xFF00D4FF)),
+                    prefixIcon: Icon(
+                      Icons.medical_services,
+                      color: Color(0xFF00D4FF),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -177,7 +202,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
                     prefixIcon: Icon(Icons.lock, color: Color(0xFF00D4FF)),
                   ),
-                  validator: (v) => (v == null || v.length < 6) ? '6+ chars required' : null,
+                  validator: (v) =>
+                      (v == null || v.length < 6) ? '6+ chars required' : null,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -186,15 +212,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     backgroundColor: const Color(0xFF3DDC84),
                     foregroundColor: const Color(0xFF07161E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: auth.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF07161E)),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF07161E),
+                          ),
                         )
-                      : const Text('CREATE ACCOUNT', style: TextStyle(fontWeight: FontWeight.bold)),
+                      : const Text(
+                          'CREATE ACCOUNT',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                 ),
               ],
             ),

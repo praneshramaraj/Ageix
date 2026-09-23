@@ -45,23 +45,38 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         title: Row(
           children: [
-            Image.asset('assets/images/aegisx_logo.png', width: 28, height: 28, fit: BoxFit.contain),
+            Image.asset(
+              'assets/images/aegisx_logo.png',
+              width: 28,
+              height: 28,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(width: 8),
             const Text(
               'AegisX',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
             const Spacer(),
             IconButton(
               icon: Icon(
                 offline.isOnline ? Icons.wifi : Icons.wifi_off,
-                color: offline.isOnline ? const Color(0xFF3DDC84) : const Color(0xFFFF4D4D),
+                color: offline.isOnline
+                    ? const Color(0xFF3DDC84)
+                    : const Color(0xFFFF4D4D),
               ),
               onPressed: () {
                 offline.toggleNetworkStatus();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(offline.isOnline ? 'Switched to ONLINE mode' : 'Switched to OFFLINE queue mode'),
+                    content: Text(
+                      offline.isOnline
+                          ? 'Switched to ONLINE mode'
+                          : 'Switched to OFFLINE queue mode',
+                    ),
                     duration: const Duration(seconds: 2),
                   ),
                 );
@@ -80,10 +95,19 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.sos, color: Colors.red), label: 'SOS'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sos, color: Colors.red),
+            label: 'SOS',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.warning), label: 'Report'),
-          BottomNavigationBarItem(icon: Icon(Icons.night_shelter), label: 'Shelters'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Alerts'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.night_shelter),
+            label: 'Shelters',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Alerts',
+          ),
         ],
       ),
     );
@@ -120,7 +144,11 @@ class CivilianHomeTab extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF4D4D), size: 28),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFFF4D4D),
+                      size: 28,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -143,8 +171,14 @@ class CivilianHomeTab extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text('Weather: 28°C Heavy Rain', style: TextStyle(color: Color(0xFFAAB6C3), fontSize: 12)),
-                    Text('Rainfall: 110mm/h', style: TextStyle(color: Color(0xFF00D4FF), fontSize: 12)),
+                    Text(
+                      'Weather: 28°C Heavy Rain',
+                      style: TextStyle(color: Color(0xFFAAB6C3), fontSize: 12),
+                    ),
+                    Text(
+                      'Rainfall: 110mm/h',
+                      style: TextStyle(color: Color(0xFF00D4FF), fontSize: 12),
+                    ),
                   ],
                 ),
               ],
@@ -153,7 +187,10 @@ class CivilianHomeTab extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Main Quick Emergency Action Grid
-          const Text('EMERGENCY SHORTCUTS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const Text(
+            'EMERGENCY SHORTCUTS',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           GridView.count(
             crossAxisCount: 2,
@@ -170,7 +207,10 @@ class CivilianHomeTab extends StatelessWidget {
                 icon: Icons.sos,
                 color: Colors.redAccent,
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SosScreen()),
+                  );
                 },
               ),
               _buildActionCard(
@@ -180,7 +220,12 @@ class CivilianHomeTab extends StatelessWidget {
                 icon: Icons.add_location_alt,
                 color: const Color(0xFFFFB000),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportDisasterScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReportDisasterScreen(),
+                    ),
+                  );
                 },
               ),
               _buildActionCard(
@@ -190,7 +235,12 @@ class CivilianHomeTab extends StatelessWidget {
                 icon: Icons.local_hospital,
                 color: const Color(0xFF00D4FF),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SafeLocationsScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SafeLocationsScreen(),
+                    ),
+                  );
                 },
               ),
               _buildActionCard(
@@ -200,7 +250,10 @@ class CivilianHomeTab extends StatelessWidget {
                 icon: Icons.history,
                 color: const Color(0xFF3DDC84),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SosHistoryScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SosHistoryScreen()),
+                  );
                 },
               ),
             ],
@@ -208,33 +261,54 @@ class CivilianHomeTab extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Emergency Alerts Preview
-          const Text('RECENT DISASTER ALERTS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const Text(
+            'RECENT DISASTER ALERTS',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          ...alertProv.alerts.take(2).map((alt) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10232C),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF1E3440)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.campaign, color: Color(0xFFFFB000)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(alt.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          const SizedBox(height: 4),
-                          Text(alt.message, style: const TextStyle(color: Color(0xFFAAB6C3), fontSize: 11), maxLines: 2),
-                        ],
+          ...alertProv.alerts
+              .take(2)
+              .map(
+                (alt) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10232C),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF1E3440)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.campaign, color: Color(0xFFFFB000)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              alt.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              alt.message,
+                              style: const TextStyle(
+                                color: Color(0xFFAAB6C3),
+                                fontSize: 11,
+                              ),
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              )),
+              ),
         ],
       ),
     );
@@ -263,9 +337,20 @@ class CivilianHomeTab extends StatelessWidget {
           children: [
             Icon(icon, size: 36, color: color),
             const SizedBox(height: 8),
-            Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFFAAB6C3), fontSize: 10)),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFFAAB6C3), fontSize: 10),
+            ),
           ],
         ),
       ),

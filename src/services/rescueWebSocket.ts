@@ -1,4 +1,5 @@
 import { useIncidentBoardStore } from '../stores/IncidentBoardStore';
+import { API_BASE, WS_URL } from '../config/appConfig';
 
 export interface RealtimeSosPayload {
   id: string;
@@ -21,26 +22,51 @@ export interface RealtimeSosPayload {
 
 class RescueWebSocketService {
   private socket: WebSocket | null = null;
-  private reconnectInterval: number = 3000;
-  private url: string = 'ws://localhost:8000/ws/sos';
+  private reconnectTimer: any = null;
+  private reconnectInterval: number = 2000;
 
   public connect() {
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    console.log("API:", API_BASE.replace(/\/api\/v1\/?$/, ""));
+    console.log("WS:", WS_URL);
+
     try {
-      this.socket = new WebSocket(this.url);
+      this.socket = new WebSocket(WS_URL);
 
       this.socket.onopen = () => {
-        console.log('[Frontend] WebSocket connected');
-        console.log('[RescueWebSocket] Connected to AEGISX Shared Backend WebSocket Server.');
+        console.log("WebSocket OPEN");
+        console.log("Waiting for SOS...");
+        this.reconnectInterval = 2000;
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
+        }
       };
+
 
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           console.log('[RescueWebSocket] Message received:', data);
 
-          if ((data.type === 'CIVILIAN_SOS_TRIGGERED' || data.type === 'NEW_SOS' || data.event === 'NEW_SOS') && data.payload) {
+          const type = data.type || data.event || '';
+          if (
+            (type === 'CIVILIAN_SOS_TRIGGERED' || type === 'NEW_SOS') &&
+            data.payload
+          ) {
             console.log('[Frontend] NEW_SOS received:', data);
             this.handleIncomingSos(data.payload as RealtimeSosPayload);
+          } else if (type === 'SOS_STATUS_UPDATED' && data.payload) {
+            const payload = data.payload;
+            if (payload.id && payload.status) {
+              useIncidentBoardStore.getState().updateIncidentStatus(payload.id, payload.status);
+            }
           }
         } catch (err) {
           console.error('[RescueWebSocket] Failed to parse WebSocket message:', err);
@@ -48,8 +74,8 @@ class RescueWebSocketService {
       };
 
       this.socket.onclose = () => {
-        console.warn('[RescueWebSocket] WebSocket closed. Attempting reconnect in 3s...');
-        setTimeout(() => this.connect(), this.reconnectInterval);
+        console.warn(`[RescueWebSocket] Closed. Attempting reconnect in ${this.reconnectInterval / 1000}s...`);
+        this.scheduleReconnect();
       };
 
       this.socket.onerror = (err) => {
@@ -58,7 +84,17 @@ class RescueWebSocketService {
       };
     } catch (error) {
       console.error('[RescueWebSocket] Connection error:', error);
+      this.scheduleReconnect();
     }
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.reconnectInterval = Math.min(this.reconnectInterval * 1.5, 10000);
+      this.connect();
+    }, this.reconnectInterval);
   }
 
   private playEmergencyAlarmSound() {
@@ -89,25 +125,32 @@ class RescueWebSocketService {
   }
 
   private handleIncomingSos(sos: RealtimeSosPayload) {
-    const coords: [number, number] = [sos.longitude || 77.588, sos.latitude || 12.962];
+    const coords: [number, number] = [
+      sos.longitude !== undefined ? Number(sos.longitude) : 77.588,
+      sos.latitude !== undefined ? Number(sos.latitude) : 12.962,
+    ];
+
+    console.log('[Frontend] NEW_SOS received in WebSocket service:', sos);
 
     // Play Audio Siren Alert
     this.playEmergencyAlarmSound();
 
     // 1. Create Incident in EOC Store with status Waiting for Dispatcher
     useIncidentBoardStore.getState().createIncident({
+      id: sos.id,
+      sosId: sos.id,
       title: `LIVE SOS: ${sos.userName || 'Civilian User'}`,
       category: 'sos',
       severity: (sos.severity || sos.priority || 'critical') as any,
-      status: 'Waiting for Dispatcher' as any,
+      status: (sos.status || 'Waiting for Dispatcher') as any,
       coordinates: coords,
-      locationName: sos.locationName || `GPS: ${sos.latitude.toFixed(4)}, ${sos.longitude.toFixed(4)}`,
+      locationName: sos.locationName || `GPS: ${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`,
       reportedBy: sos.userName || 'Civilian Mobile App',
       contactNumber: sos.userPhone || '+91 98112 33441',
       affectedCount: 1,
       description: sos.message || sos.description || sos.medicalInfo || 'Immediate emergency distress ping triggered.',
-    });
-    console.log('[Frontend] Store updated with new SOS:', sos);
+    } as any);
+    console.log('[Frontend] Store updated with new SOS:', sos.id);
 
     // 2. Dispatch custom event for Map auto-centering, popup, and notification
     window.dispatchEvent(
@@ -119,7 +162,7 @@ class RescueWebSocketService {
       })
     );
   }
+
 }
 
 export const rescueWebSocketService = new RescueWebSocketService();
-

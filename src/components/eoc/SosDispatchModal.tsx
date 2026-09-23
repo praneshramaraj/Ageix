@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useTeamStore } from '../../stores/TeamStore';
 import { useMissionStore } from '../../stores/MissionStore';
+import { API_BASE } from '../../config/appConfig';
 
 export interface SosDispatchData {
   id: string;
@@ -128,7 +129,8 @@ export const SosDispatchModal: React.FC<SosDispatchModalProps> = ({
     const vehicleName = team.equipment?.[0] || 'Rapid Response Rescue Vehicle R-01';
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/sos/${sos.id}/assign-team`, {
+      console.log(`[Frontend] Assigning team to SOS ${sos.id} via ${API_BASE}/sos/${sos.id}/assign-team...`);
+      const res = await fetch(`${API_BASE}/sos/${sos.id}/assign-team`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,6 +141,7 @@ export const SosDispatchModal: React.FC<SosDispatchModalProps> = ({
           eta: eta,
         }),
       });
+
 
       const updatedSos: SosDispatchData = {
         ...sos,
@@ -158,6 +161,7 @@ export const SosDispatchModal: React.FC<SosDispatchModalProps> = ({
 
       if (res.ok) {
         const data = await res.json();
+        console.log('[Frontend] Team assigned successfully, server response:', data);
         if (data.mission) {
           createMission({
             title: data.mission.title || `Rescue Mission for ${sos.userName}`,
@@ -192,19 +196,25 @@ export const SosDispatchModal: React.FC<SosDispatchModalProps> = ({
   const handleLocationClick = async () => {
     setIsSendingSms(true);
     try {
+      console.log(`[Frontend] Triggering SMS to 7806994340 via ${API_BASE}/sos/${sos.id}/send-sms...`);
       // 1. Trigger backend SMS alert
-      await fetch(`http://localhost:8000/api/v1/sos/${sos.id}/send-sms`, {
+      const res = await fetch(`${API_BASE}/sos/${sos.id}/send-sms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: '7806994340',
+          phoneNumber: '7806994340',
         }),
       });
+      if (res.ok) {
+        const smsRes = await res.json();
+        console.log('[Frontend] SMS API response:', smsRes);
+      }
     } catch (e) {
       console.error('[SosDispatchModal] SMS trigger error:', e);
     } finally {
       setIsSendingSms(false);
     }
+
 
     // 2. Dispatch custom event for Map component to trigger flyTo zoom 17 & victim popup
     window.dispatchEvent(
@@ -227,6 +237,7 @@ export const SosDispatchModal: React.FC<SosDispatchModalProps> = ({
 
     onClose();
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">

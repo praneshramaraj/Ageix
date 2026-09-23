@@ -12,6 +12,8 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
+import { API_BASE } from '../../config/appConfig';
+
 
 interface Props {
   isOpen: boolean;
@@ -82,8 +84,9 @@ export const SmartTeamAssignModal: React.FC<Props> = ({
     const chosen = candidateTeams.find((t) => t.id === selectedTeamId) || candidateTeams[0];
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/sos/${incidentId}/assign-team`, {
+      const res = await fetch(`${API_BASE}/sos/${incidentId}/assign-team`, {
         method: 'POST',
+
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId: chosen.id,

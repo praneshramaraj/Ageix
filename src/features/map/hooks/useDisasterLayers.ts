@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
-import { Map as MapLibreMap } from 'maplibre-gl';
+import { Map as MapLibreMap, GeoJSONSource } from 'maplibre-gl';
 import { useMapStore } from '../stores/MapStore';
 import { DisasterGISService } from '../services/DisasterGISService';
+import { useIncidentBoardStore } from '../../../stores/IncidentBoardStore';
 
 export function useDisasterLayers(map: MapLibreMap | null) {
   const { activeLayers } = useMapStore();
+  const { incidents } = useIncidentBoardStore();
 
   useEffect(() => {
     if (!map) return;
@@ -18,11 +20,50 @@ export function useDisasterLayers(map: MapLibreMap | null) {
       handleStyleLoad();
     }
     map.on('style.load', handleStyleLoad);
+    map.on('load', handleStyleLoad);
 
     return () => {
-      map.off('style.load', handleStyleLoad);
+      try {
+        map.off('style.load', handleStyleLoad);
+        map.off('load', handleStyleLoad);
+      } catch (_) {}
     };
   }, [map]);
+
+  // Synchronize dynamic incident & SOS points on map
+  useEffect(() => {
+    if (!map) return;
+
+    const syncIncidents = () => {
+      try {
+        const source = map.getSource('rescue_nodes_src') as GeoJSONSource;
+        if (source) {
+          const incidentFeatures: GeoJSON.Feature[] = incidents.map((inc) => ({
+            type: 'Feature',
+            properties: {
+              id: inc.id,
+              name: inc.title,
+              type: inc.category.toUpperCase(),
+              priority: inc.severity,
+              reportedBy: inc.reportedBy,
+              timestamp: inc.timestamp,
+            },
+            geometry: {
+              type: 'Point',
+              coordinates: inc.coordinates,
+            },
+          }));
+
+          source.setData({
+            type: 'FeatureCollection',
+            features: incidentFeatures,
+          });
+        }
+      } catch (_) {}
+    };
+
+    syncIncidents();
+  }, [map, incidents]);
 
   // Synchronize Disaster Layer Visibilities
   useEffect(() => {
@@ -34,14 +75,17 @@ export function useDisasterLayers(map: MapLibreMap | null) {
       cyclone_track: ['cyclone_track_line'],
       earthquake_risk: ['earthquake_risk_line'],
       risk_heatmap: ['risk_heatmap_layer'],
+      rescue_nodes: ['rescue_nodes_layer'],
     };
 
     Object.entries(disasterLayerMappings).forEach(([key, layerIds]) => {
       const isVisible = activeLayers[key as keyof typeof activeLayers];
       layerIds.forEach((id) => {
-        if (map.getLayer(id)) {
-          map.setLayoutProperty(id, 'visibility', isVisible ? 'visible' : 'none');
-        }
+        try {
+          if (map.getLayer(id)) {
+            map.setLayoutProperty(id, 'visibility', isVisible !== false ? 'visible' : 'none');
+          }
+        } catch (_) {}
       });
     });
   }, [map, activeLayers]);

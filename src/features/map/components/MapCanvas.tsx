@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 type MapLibreMap = maplibregl.Map;
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -18,21 +18,21 @@ interface MapCanvasProps {
 
 export const MapCanvas: React.FC<MapCanvasProps> = ({ onMapReady }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<MapLibreMap | null>(null);
+  const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
 
   const { viewState, basemapStyle, selectedFeature } = useMapStore();
 
-  useLayers(mapInstanceRef.current);
-  useMapEvents(mapInstanceRef.current);
-  useDisasterLayers(mapInstanceRef.current);
-  useMeasurement(mapInstanceRef.current);
-  useDrawing(mapInstanceRef.current);
-  useNavigationLayers(mapInstanceRef.current);
+  useLayers(mapInstance);
+  useMapEvents(mapInstance);
+  useDisasterLayers(mapInstance);
+  useMeasurement(mapInstance);
+  useDrawing(mapInstance);
+  useNavigationLayers(mapInstance);
 
   // Initialize MapLibre GL instance
   useEffect(() => {
-    if (!containerRef.current || mapInstanceRef.current) return;
+    if (!containerRef.current || mapInstance) return;
 
     TileService.preloadBasemaps();
 
@@ -48,30 +48,36 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({ onMapReady }) => {
       attributionControl: false,
     });
 
-    mapInstanceRef.current = map;
+    setMapInstance(map);
 
     if (onMapReady) {
       onMapReady(map);
     }
 
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
       }
+      map.remove();
+      setMapInstance(null);
     };
   }, []);
 
   // Update style when basemapStyle changes
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const newStyle = TileService.getStyle(basemapStyle);
-    mapInstanceRef.current.setStyle(newStyle);
-  }, [basemapStyle]);
+    if (!mapInstance) return;
+    try {
+      const newStyle = TileService.getStyle(basemapStyle);
+      mapInstance.setStyle(newStyle);
+    } catch (err) {
+      console.warn('[MapCanvas] Failed to set style:', err);
+    }
+  }, [basemapStyle, mapInstance]);
 
   // Synchronize selection marker
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstance) return;
 
     if (selectedFeature) {
       if (!markerRef.current) {
@@ -79,7 +85,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({ onMapReady }) => {
         el.className = 'search-highlight-marker';
         markerRef.current = new maplibregl.Marker({ element: el })
           .setLngLat(selectedFeature.coordinates)
-          .addTo(mapInstanceRef.current);
+          .addTo(mapInstance);
       } else {
         markerRef.current.setLngLat(selectedFeature.coordinates);
       }
@@ -89,7 +95,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({ onMapReady }) => {
         markerRef.current = null;
       }
     }
-  }, [selectedFeature]);
+  }, [selectedFeature, mapInstance]);
 
   return (
     <div className="relative w-full h-full min-h-[calc(100vh-4rem)] bg-[#07161E] overflow-hidden select-none">

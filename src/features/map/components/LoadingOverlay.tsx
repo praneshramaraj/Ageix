@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMapStore } from '../stores/MapStore';
 
 export const LoadingOverlay: React.FC = () => {
   const { isMapLoaded, tileLoadingProgress } = useMapStore();
+  const [forceHide, setForceHide] = useState(false);
 
-  if (isMapLoaded && tileLoadingProgress >= 100) return null;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceHide(true);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (forceHide || (isMapLoaded && tileLoadingProgress >= 100)) {
+    return null;
+  }
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#07161E]/90 backdrop-blur-md transition-opacity duration-300">

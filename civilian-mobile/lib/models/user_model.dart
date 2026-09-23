@@ -27,20 +27,32 @@ class UserModel {
     this.refreshToken = '',
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json, {String token = '', String refreshToken = ''}) {
+  factory UserModel.fromJson(
+    Map<String, dynamic> json, {
+    String token = '',
+    String refreshToken = '',
+  }) {
     return UserModel(
       id: json['id'] ?? 'usr_demo',
       fullName: json['fullName'] ?? json['full_name'] ?? 'Civilian User',
-      username: json['username'] ?? json['email']?.split('@')[0] ?? 'civilian_user',
+      username:
+          json['username'] ?? json['email']?.split('@')[0] ?? 'civilian_user',
       email: json['email'] ?? 'civilian@aegisx.org',
       phone: json['phone'] ?? '+91 98112 33441',
-      age: json['age'] is int ? json['age'] : (int.tryParse(json['age']?.toString() ?? '25') ?? 25),
+      age: json['age'] is int
+          ? json['age']
+          : (int.tryParse(json['age']?.toString() ?? '25') ?? 25),
       bloodGroup: json['bloodGroup'] ?? json['blood_group'] ?? 'O+',
       gender: json['gender'] ?? 'Other',
-      emergencyContact: json['emergencyContact'] ?? json['emergency_contact'] ?? '+91 98112 33441',
+      emergencyContact:
+          json['emergencyContact'] ??
+          json['emergency_contact'] ??
+          '+91 98112 33441',
       medicalNotes: json['medicalNotes'] ?? json['medical_notes'] ?? 'None',
       token: token.isNotEmpty ? token : (json['token'] ?? ''),
-      refreshToken: refreshToken.isNotEmpty ? refreshToken : (json['refreshToken'] ?? ''),
+      refreshToken: refreshToken.isNotEmpty
+          ? refreshToken
+          : (json['refreshToken'] ?? ''),
     );
   }
 

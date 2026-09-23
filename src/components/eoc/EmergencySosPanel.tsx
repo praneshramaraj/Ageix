@@ -5,6 +5,7 @@ import { Radio, AlertTriangle, MapPin, Phone, User, Clock, CheckCircle2, ShieldA
 import { useIncidentBoardStore } from '../../stores/IncidentBoardStore';
 import { useMissionStore } from '../../stores/MissionStore';
 import { SosDispatchModal, SosDispatchData } from './SosDispatchModal';
+import { API_BASE } from '../../config/appConfig';
 
 export interface SosItem {
   id: string;
@@ -42,7 +43,7 @@ export const EmergencySosPanel: React.FC<{ onFocusMap?: (lng: number, lat: numbe
 
   const fetchSosList = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/sos');
+      const res = await fetch(`${API_BASE}/sos`);
       if (res.ok) {
         const data = await res.json();
         setSosList(data.sosList || []);
@@ -51,6 +52,7 @@ export const EmergencySosPanel: React.FC<{ onFocusMap?: (lng: number, lat: numbe
       console.error('[EmergencySosPanel] Error fetching SOS list:', e);
     }
   };
+
 
   useEffect(() => {
     fetchSosList();
@@ -80,7 +82,7 @@ export const EmergencySosPanel: React.FC<{ onFocusMap?: (lng: number, lat: numbe
   const handleAssignTeam = async (sos: SosItem) => {
     setLoadingId(sos.id);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/sos/${sos.id}/assign-team`, {
+      const res = await fetch(`${API_BASE}/sos/${sos.id}/assign-team`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +148,7 @@ export const EmergencySosPanel: React.FC<{ onFocusMap?: (lng: number, lat: numbe
 
   const handleReject = async (sos: SosItem) => {
     try {
-      await fetch(`http://localhost:8000/api/v1/sos/${sos.id}/status?status_str=REJECTED`, {
+      await fetch(`${API_BASE}/sos/${sos.id}/status?status_str=REJECTED`, {
         method: 'PATCH',
       });
       setSosList((prev) => prev.filter((item) => item.id !== sos.id));
@@ -154,6 +156,8 @@ export const EmergencySosPanel: React.FC<{ onFocusMap?: (lng: number, lat: numbe
       setSosList((prev) => prev.filter((item) => item.id !== sos.id));
     }
   };
+
+
 
   return (
     <div className="space-y-4">

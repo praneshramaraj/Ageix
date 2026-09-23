@@ -1,84 +1,120 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../core/config/app_config.dart';
 import '../models/sos_model.dart';
 import '../models/safe_location_model.dart';
 import '../models/alert_model.dart';
 import '../models/user_model.dart';
+import 'secure_storage_service.dart';
 
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  ApiException(this.message, {this.statusCode});
+
+  @override
+  String toString() => message;
+}
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
-  static const List<String> candidateBaseUrls = [
-    'http://127.0.0.1:8000/api',
-    'http://10.0.2.2:8000/api',
-    'http://172.16.9.153:8000/api',
-    'http://localhost:8000/api',
-  ];
+  static final http.Client _client = http.Client();
 
-  static Future<UserModel> login(String username, String password) async {
-    final payload = jsonEncode({
-      'username': username,
-      'password': password,
-    });
-
-    // Try direct primary URL first for 0ms network latency
-    try {
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/v1/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: payload,
-      ).timeout(const Duration(milliseconds: 1500));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final userMap = data['user'] ?? {};
-        return UserModel.fromJson(
-          userMap,
-          token: data['access_token'] ?? '',
-          refreshToken: data['refresh_token'] ?? '',
-        );
-      }
-    } catch (e) {
-      print('[ApiService] Primary login fast-path failed: $e');
+  static Map<String, String> _buildHeaders({
+    String? token,
+    bool isJson = true,
+  }) {
+    final headers = <String, String>{};
+    if (isJson) {
+      headers['Content-Type'] = 'application/json';
+      headers['Accept'] = 'application/json';
     }
-
-    for (final url in candidateBaseUrls) {
-      try {
-        final response = await http.post(
-          Uri.parse('$url/v1/auth/login'),
-          headers: {'Content-Type': 'application/json'},
-          body: payload,
-        ).timeout(const Duration(seconds: 2));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          final userMap = data['user'] ?? {};
-          return UserModel.fromJson(
-            userMap,
-            token: data['access_token'] ?? '',
-            refreshToken: data['refresh_token'] ?? '',
-          );
-        }
-      } catch (e) {
-        print('[ApiService] Login error for $url: $e');
-      }
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
     }
-    // Fallback demo user
-    return UserModel(
-      id: 'usr_demo',
-      fullName: 'Civilian User',
-      username: username.isEmpty ? 'johndoe' : username,
-      email: '${username}@aegisx.org',
-      phone: '+91 98112 33441',
-      age: 28,
-      bloodGroup: 'O+',
-      gender: 'Male',
-      emergencyContact: '+91 78069 94340',
-      token: 'demo_jwt_access_token',
-      refreshToken: 'demo_jwt_refresh_token',
-    );
+    return headers;
   }
 
+  static Future<http.Response> _executeWithRetry(
+    Future<http.Response> Function() requestFn, {
+    int maxRetries = AppConfig.maxRetries,
+  }) async {
+    int attempt = 0;
+    while (true) {
+      try {
+        attempt++;
+        final response = await requestFn().timeout(AppConfig.connectTimeout);
+        return response;
+      } catch (e) {
+        if (attempt >= maxRetries) {
+          if (e is TimeoutException) {
+            throw ApiException(
+              'Connection timed out. Please check your network connection.',
+            );
+          }
+          throw ApiException('Network failure: ${e.toString()}');
+        }
+        await Future.delayed(Duration(milliseconds: 500 * attempt));
+      }
+    }
+  }
+
+  static Future<http.Response> _authenticatedRequest(
+    Future<http.Response> Function(String token) requestFn,
+  ) async {
+    String token = await SecureStorageService.getAccessToken() ?? '';
+    var response = await _executeWithRetry(() => requestFn(token));
+
+    if (response.statusCode == 401) {
+      final refreshed = await refreshToken();
+      if (refreshed) {
+        token = await SecureStorageService.getAccessToken() ?? '';
+        response = await _executeWithRetry(() => requestFn(token));
+      } else {
+        await SecureStorageService.clearAll();
+        throw ApiException(
+          'Session expired. Please log in again.',
+          statusCode: 401,
+        );
+      }
+    }
+    return response;
+  }
+
+  // Auth: Login
+  static Future<UserModel> login(String username, String password) async {
+    final payload = jsonEncode({'username': username, 'password': password});
+
+    final response = await _executeWithRetry(
+      () => _client.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/auth/login'),
+        headers: _buildHeaders(),
+        body: payload,
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = _parseJson(response.body);
+      final userMap = data['user'] ?? data;
+      final accessToken = data['access_token'] ?? data['token'] ?? '';
+      final refreshToken = data['refresh_token'] ?? '';
+
+      final user = UserModel.fromJson(
+        userMap,
+        token: accessToken,
+        refreshToken: refreshToken,
+      );
+
+      await SecureStorageService.saveUser(user);
+      return user;
+    } else {
+      final errDetail = _extractErrorMessage(response);
+      throw ApiException(errDetail, statusCode: response.statusCode);
+    }
+  }
+
+  // Auth: Register
   static Future<UserModel> register({
     required String fullName,
     required String username,
@@ -100,73 +136,68 @@ class ApiService {
       'emergencyContact': emergencyContact,
     });
 
-    try {
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/v1/auth/register'),
-        headers: {'Content-Type': 'application/json'},
+    final response = await _executeWithRetry(
+      () => _client.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/auth/register'),
+        headers: _buildHeaders(),
         body: payload,
-      ).timeout(const Duration(milliseconds: 1500));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final userMap = data['user'] ?? {};
-        return UserModel.fromJson(
-          userMap,
-          token: data['access_token'] ?? '',
-          refreshToken: data['refresh_token'] ?? '',
-        );
-      } else if (response.statusCode == 400) {
-        final errData = jsonDecode(response.body);
-        throw Exception(errData['detail'] ?? 'Registration failed');
-      }
-    } catch (e) {
-      if (e.toString().contains('Username already registered')) rethrow;
-      print('[ApiService] Primary register fast-path failed: $e');
-    }
-
-    for (final url in candidateBaseUrls) {
-      try {
-        final response = await http.post(
-          Uri.parse('$url/v1/auth/register'),
-          headers: {'Content-Type': 'application/json'},
-          body: payload,
-        ).timeout(const Duration(seconds: 2));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          final userMap = data['user'] ?? {};
-          return UserModel.fromJson(
-            userMap,
-            token: data['access_token'] ?? '',
-            refreshToken: data['refresh_token'] ?? '',
-          );
-        } else if (response.statusCode == 400) {
-          final errData = jsonDecode(response.body);
-          throw Exception(errData['detail'] ?? 'Registration failed');
-        }
-      } catch (e) {
-        print('[ApiService] Register error for $url: $e');
-        if (e.toString().contains('Username already registered')) {
-          rethrow;
-        }
-      }
-    }
-
-    return UserModel(
-      id: 'usr_demo',
-      fullName: fullName,
-      username: username,
-      email: '$username@aegisx.org',
-      phone: phone,
-      age: age,
-      bloodGroup: bloodGroup,
-      gender: gender,
-      emergencyContact: emergencyContact,
-      token: 'demo_jwt_access_token',
-      refreshToken: 'demo_jwt_refresh_token',
+      ),
     );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = _parseJson(response.body);
+      final userMap = data['user'] ?? data;
+      final accessToken = data['access_token'] ?? data['token'] ?? '';
+      final refreshToken = data['refresh_token'] ?? '';
+
+      final user = UserModel.fromJson(
+        userMap,
+        token: accessToken,
+        refreshToken: refreshToken,
+      );
+
+      await SecureStorageService.saveUser(user);
+      return user;
+    } else {
+      final errDetail = _extractErrorMessage(response);
+      throw ApiException(errDetail, statusCode: response.statusCode);
+    }
   }
 
+  // Auth: Refresh Token
+  static Future<bool> refreshToken() async {
+    final savedRefreshToken = await SecureStorageService.getRefreshToken();
+    if (savedRefreshToken == null || savedRefreshToken.isEmpty) {
+      return false;
+    }
+
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh'),
+            headers: _buildHeaders(),
+            body: jsonEncode({'refresh_token': savedRefreshToken}),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      if (response.statusCode == 200) {
+        final data = _parseJson(response.body);
+        final newAccessToken = data['access_token'] ?? '';
+        final newRefreshToken = data['refresh_token'] ?? savedRefreshToken;
+
+        if (newAccessToken.isNotEmpty) {
+          await SecureStorageService.saveTokens(
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+          );
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // SOS: Trigger Emergency SOS
   static Future<SosRequestModel?> sendSos({
     required String userName,
     required String userPhone,
@@ -179,6 +210,8 @@ class ApiService {
     String emergencyContact = '+91 98112 33441',
     String? medicalInfo,
     String severity = 'critical',
+    String disasterType = 'Emergency',
+    String locationName = 'GPS Emergency Location',
   }) async {
     final payload = jsonEncode({
       'userName': userName,
@@ -190,73 +223,66 @@ class ApiService {
       'emergencyContact': emergencyContact,
       'latitude': latitude,
       'longitude': longitude,
+      'timestamp': DateTime.now().toIso8601String(),
+      'medicalNotes': medicalInfo ?? 'None',
       'medicalInfo': medicalInfo,
       'severity': severity,
-      'locationName': 'GPS Emergency Ping',
-      'description': 'Distress call from Flutter Mobile Application',
+      'disasterType': disasterType,
+      'locationName': locationName,
+      'description': 'Hold-to-confirm emergency distress call',
     });
 
-    // Zero-delay fast path directly to 127.0.0.1 (ADB reverse port 8000)
     try {
-      print('[TIMING] Zero-latency HTTP POST started at: ${DateTime.now().toIso8601String()}');
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/v1/sos'),
-        headers: {'Content-Type': 'application/json'},
-        body: payload,
-      ).timeout(const Duration(milliseconds: 1500));
+      print('[Flutter] HTTP sent: POST ${AppConfig.apiBaseUrl}/sos');
+      final response = await _authenticatedRequest(
+        (token) => _client.post(
+          Uri.parse('${AppConfig.apiBaseUrl}/sos'),
+          headers: _buildHeaders(token: token),
+          body: payload,
+        ),
+      );
 
-      print('[TIMING] Zero-latency HTTP POST completed at: ${DateTime.now().toIso8601String()} with status ${response.statusCode}');
+      print('[Flutter] Response received: status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        if (data['sos'] != null) {
-          return SosRequestModel.fromJson(data['sos']);
-        }
+        final data = _parseJson(response.body);
+        final sosJson = data['sos'] ?? data;
+        return SosRequestModel.fromJson(sosJson);
+      } else {
+        throw ApiException(
+          _extractErrorMessage(response),
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
-      print('[ApiService] Primary sendSos fast-path failed, trying candidate URLs: $e');
+      print('[Flutter] HTTP error: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to send SOS: ${e.toString()}');
     }
-
-    for (final url in candidateBaseUrls) {
-      for (final endpoint in ['$url/v1/sos', '$url/sos']) {
-        try {
-          final response = await http.post(
-            Uri.parse(endpoint),
-            headers: {'Content-Type': 'application/json'},
-            body: payload,
-          ).timeout(const Duration(seconds: 2));
-
-          if (response.statusCode == 200 || response.statusCode == 201) {
-            final data = jsonDecode(response.body);
-            if (data['sos'] != null) {
-              return SosRequestModel.fromJson(data['sos']);
-            }
-          }
-        } catch (e) {
-          print('[ApiService] sendSos failed for $endpoint: $e');
-        }
-      }
-    }
-
-    print('[ApiService] CRITICAL: All SOS endpoints failed to respond!');
-    return null;
   }
 
+
+  // SOS: Fetch History
   static Future<List<SosRequestModel>> getSosHistory() async {
-    for (final url in candidateBaseUrls) {
-      try {
-        final response = await http.get(Uri.parse('$url/sos')).timeout(const Duration(seconds: 4));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          final list = data['sosList'] as List;
-          return list.map((item) => SosRequestModel.fromJson(item)).toList();
-        }
-      } catch (e) {
-        print('[ApiService] getSosHistory error for $url: $e');
+    try {
+      final response = await _authenticatedRequest(
+        (token) => _client.get(
+          Uri.parse('${AppConfig.apiBaseUrl}/sos'),
+          headers: _buildHeaders(token: token, isJson: false),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = _parseJson(response.body);
+        final List list = data is List
+            ? data
+            : (data['sosList'] ?? data['history'] ?? []);
+        return list.map((item) => SosRequestModel.fromJson(item)).toList();
       }
-    }
+    } catch (_) {}
     return [];
   }
 
+  // Reports: Submit Disaster Report
   static Future<bool> sendReport({
     required String category,
     required String title,
@@ -266,51 +292,88 @@ class ApiService {
     required String severity,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/reports'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'category': category,
-          'title': title,
-          'description': description,
-          'latitude': latitude,
-          'longitude': longitude,
-          'severity': severity,
-        }),
+      final payload = jsonEncode({
+        'category': category,
+        'title': title,
+        'description': description,
+        'latitude': latitude,
+        'longitude': longitude,
+        'severity': severity,
+      });
+
+      final response = await _authenticatedRequest(
+        (token) => _client.post(
+          Uri.parse('${AppConfig.apiBaseUrl}/reports'),
+          headers: _buildHeaders(token: token),
+          body: payload,
+        ),
       );
-      return response.statusCode == 200;
+
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print('[ApiService] sendReport error: $e');
-      return true;
+      return false;
     }
   }
 
+  // Facilities & Shelters
   static Future<List<SafeLocationModel>> getFacilities(String endpoint) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/$endpoint'));
+      final response = await _executeWithRetry(
+        () => _client.get(
+          Uri.parse('${AppConfig.apiBaseUrl}/$endpoint'),
+          headers: _buildHeaders(isJson: false),
+        ),
+      );
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final key = data.keys.first;
-        final list = data[key] as List;
+        final data = _parseJson(response.body);
+        final List list = data is List
+            ? data
+            : (data.values.firstWhere((v) => v is List, orElse: () => [])
+                  as List);
         return list.map((item) => SafeLocationModel.fromJson(item)).toList();
       }
-    } catch (e) {
-      print('[ApiService] getFacilities ($endpoint) error: $e');
-    }
+    } catch (_) {}
     return [];
   }
 
+  // Emergency Alerts
   static Future<List<EmergencyAlertModel>> getAlerts() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/alerts'));
+      final response = await _executeWithRetry(
+        () => _client.get(
+          Uri.parse('${AppConfig.apiBaseUrl}/alerts'),
+          headers: _buildHeaders(isJson: false),
+        ),
+      );
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final list = data['alerts'] as List;
+        final data = _parseJson(response.body);
+        final List list = data is List ? data : (data['alerts'] ?? []);
         return list.map((item) => EmergencyAlertModel.fromJson(item)).toList();
       }
-    } catch (e) {
-      print('[ApiService] getAlerts error: $e');
-    }
+    } catch (_) {}
     return [];
+  }
+
+  static dynamic _parseJson(String source) {
+    try {
+      return jsonDecode(source);
+    } catch (e) {
+      throw ApiException('Invalid JSON response format from server');
+    }
+  }
+
+  static String _extractErrorMessage(http.Response response) {
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map) {
+        return data['detail'] ??
+            data['message'] ??
+            data['error'] ??
+            'Server error (${response.statusCode})';
+      }
+    } catch (_) {}
+    return 'Server returned status ${response.statusCode}';
   }
 }

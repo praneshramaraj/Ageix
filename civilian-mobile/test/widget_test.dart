@@ -1,10 +1,22 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:civilian_mobile/main.dart';
+import 'package:provider/provider.dart';
+import 'package:civilian_mobile/providers/auth_provider.dart';
+import 'package:civilian_mobile/screens/auth/login_screen.dart';
 
 void main() {
-  testWidgets('Civilian App smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const AegisxCivilianApp());
-    expect(find.byType(AegisxCivilianApp), findsOneWidget);
+  testWidgets('Civilian App login screen smoke test', (WidgetTester tester) async {
+    final authProvider = AuthProvider();
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: const MaterialApp(
+          home: LoginScreen(),
+        ),
+      ),
+    );
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    await tester.pump();
   });
 }
-

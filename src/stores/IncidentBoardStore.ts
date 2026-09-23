@@ -122,20 +122,36 @@ export const useIncidentBoardStore = create<IncidentBoardStoreState>((set) => ({
   updateIncidentStatus: (incidentId, status) =>
     set((state) => ({
       incidents: state.incidents.map((inc) =>
-        inc.id === incidentId ? { ...inc, status } : inc
+        inc.id === incidentId || (inc as any).sosId === incidentId
+          ? { ...inc, status }
+          : inc
       ),
     })),
 
   createIncident: (incidentData) =>
-    set((state) => ({
-      incidents: [
-        {
-          ...incidentData,
-          id: `inc_${Date.now()}`,
-          code: `INC-2026-${Math.floor(900 + Math.random() * 90)}`,
-          timestamp: 'Just now',
-        },
-        ...state.incidents,
-      ],
-    })),
+    set((state) => {
+      const newId = (incidentData as any).id || (incidentData as any).incidentId || `inc_${Date.now()}`;
+      const exists = state.incidents.some((inc) => inc.id === newId || (inc as any).sosId === newId);
+      if (exists) {
+        return {
+          incidents: state.incidents.map((inc) =>
+            inc.id === newId || (inc as any).sosId === newId
+              ? { ...inc, ...incidentData }
+              : inc
+          ),
+        };
+      }
+      return {
+        incidents: [
+          {
+            ...incidentData,
+            id: newId,
+            code: (incidentData as any).code || `INC-2026-${Math.floor(900 + Math.random() * 90)}`,
+            timestamp: (incidentData as any).timestamp || 'Just now',
+          },
+          ...state.incidents,
+        ],
+      };
+    }),
 }));
+

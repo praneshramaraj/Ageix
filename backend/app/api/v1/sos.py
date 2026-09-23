@@ -197,12 +197,20 @@ async def create_sos(sos: SosCreateSchema, db: Session = Depends(get_db)):
         "payload": sos_record
     }
     await ws_manager.broadcast_to_channel("sos", ws_payload)
-    print(f"[Backend] NEW_SOS broadcast: id={sos_id}")
+    await ws_manager.broadcast_global(ws_payload)
     await ws_manager.broadcast_to_channel("sos", {
         "type": "CIVILIAN_SOS_TRIGGERED",
         "payload": sos_record
     })
+    await ws_manager.broadcast_global({
+        "type": "CIVILIAN_SOS_TRIGGERED",
+        "payload": sos_record
+    })
     await ws_manager.broadcast_to_channel("incidents", {
+        "type": "INCIDENT_CREATED",
+        "payload": new_inc
+    })
+    await ws_manager.broadcast_global({
         "type": "INCIDENT_CREATED",
         "payload": new_inc
     })
@@ -305,10 +313,35 @@ async def assign_team_to_sos(sos_id: str, assign_data: AssignTeamSchema, db: Ses
         }
     }
     await ws_manager.broadcast_to_channel("sos", update_payload)
+    await ws_manager.broadcast_global(update_payload)
     await ws_manager.broadcast_to_channel("missions", {
         "type": "MISSION_UPDATED",
         "payload": new_mission
     })
+    await ws_manager.broadcast_global({
+        "type": "MISSION_UPDATED",
+        "payload": new_mission
+    })
+
+    # Automatically dispatch Rescue Mission SMS to 7806994340
+    mission_data = {
+        "missionId": new_mission["code"],
+        "civilianName": target_sos.get("userName", "Civilian User"),
+        "age": target_sos.get("age", 25),
+        "bloodGroup": target_sos.get("bloodGroup", "O+"),
+        "phone": target_sos.get("userPhone", "+91 98112 33441"),
+        "latitude": target_sos.get("latitude", 12.9620),
+        "longitude": target_sos.get("longitude", 77.5880),
+        "locationName": target_sos.get("locationName", "Sector 4 Kaveri Flood Zone"),
+        "nearestRoute": "Main Kaveri Arterial Expressway",
+        "eta": eta_val,
+        "assignedTeam": team_name,
+        "requiredTeamMembers": target_sos.get("requiredTeamMembers", 4),
+        "priority": target_sos.get("severity", "critical"),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    }
+    print(f"[Backend] Auto-dispatching Rescue SMS for mission {new_mission['code']} to 7806994340...")
+    notification_service.send_rescue_alert_sms("7806994340", mission_data)
 
     return {
         "message": "Team assigned successfully. Status set to En Route.",
@@ -322,6 +355,10 @@ async def update_sos_status(sos_id: str, status_str: str):
         if s["id"] == sos_id:
             s["status"] = status_str
             await ws_manager.broadcast_to_channel("sos", {
+                "type": "SOS_STATUS_UPDATED",
+                "payload": s
+            })
+            await ws_manager.broadcast_global({
                 "type": "SOS_STATUS_UPDATED",
                 "payload": s
             })
@@ -359,11 +396,14 @@ async def send_sos_sms(sos_id: str, payload: SendSmsSchema):
         "locationName": target_sos.get("locationName", "Sector 4 Kaveri Flood Zone"),
         "nearestRoute": payload.nearestRoute or "Main Kaveri Arterial Expressway",
         "eta": target_sos.get("eta") or payload.eta or "8 mins",
+        "assignedTeam": target_sos.get("assignedTeam", "NDRF Alpha Rescue Unit 1"),
         "requiredTeamMembers": target_sos.get("requiredTeamMembers", 4),
-        "priority": target_sos.get("severity", "critical")
+        "priority": target_sos.get("severity", "critical"),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
 
-    dest_number = payload.phoneNumber or "7806994340"
+    dest_number = "7806994340"
+    print(f"[Backend] Manual SMS triggered for SOS {sos_id} to destination {dest_number}...")
     notification_service.send_rescue_alert_sms(dest_number, mission_data)
 
     return {
@@ -371,5 +411,6 @@ async def send_sos_sms(sos_id: str, payload: SendSmsSchema):
         "destination": dest_number,
         "missionData": mission_data
     }
+
 
 

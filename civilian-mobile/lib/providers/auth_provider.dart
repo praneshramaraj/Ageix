@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
+import '../services/secure_storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   UserModel? _user;
@@ -19,34 +18,20 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> autoLogin() async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      final userJsonStr = prefs.getString('user_data');
-
-      if (token != null && token.isNotEmpty && userJsonStr != null) {
-        final Map<String, dynamic> userMap = jsonDecode(userJsonStr);
-        _user = UserModel.fromJson(userMap, token: token, refreshToken: prefs.getString('refresh_token') ?? '');
-        notifyListeners();
+      final savedUser = await SecureStorageService.getUser();
+      if (savedUser != null && savedUser.token.isNotEmpty) {
+        _user = savedUser;
       } else {
-        // Fallback default demo user if no saved session
-        _user = UserModel(
-          id: 'usr_demo',
-          fullName: 'John Doe (Civilian)',
-          username: 'johndoe',
-          email: 'civilian@aegisx.org',
-          phone: '+91 98112 33441',
-          age: 28,
-          bloodGroup: 'O+',
-          gender: 'Male',
-          emergencyContact: '+91 78069 94340',
-          medicalNotes: 'Asthma, Penicillin Allergy',
-          token: 'demo_token_123',
-        );
-        notifyListeners();
+        _user = null;
       }
     } catch (e) {
-      print('[AuthProvider] autoLogin error: $e');
+      _user = null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -58,7 +43,6 @@ class AuthProvider with ChangeNotifier {
     try {
       final user = await ApiService.login(username, password);
       _user = user;
-      await _saveSession(user);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -96,7 +80,6 @@ class AuthProvider with ChangeNotifier {
         emergencyContact: emergencyContact,
       );
       _user = user;
-      await _saveSession(user);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -108,23 +91,18 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _saveSession(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', user.token);
-    await prefs.setString('refresh_token', user.refreshToken);
-    await prefs.setString('user_data', jsonEncode(user.toJson()));
-  }
-
   Future<void> logout() async {
     _user = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('refresh_token');
-    await prefs.remove('user_data');
+    await SecureStorageService.clearAll();
     notifyListeners();
   }
 
-  void updateProfile(String fullName, String phone, String bloodGroup, String medicalNotes) {
+  Future<void> updateProfile(
+    String fullName,
+    String phone,
+    String bloodGroup,
+    String medicalNotes,
+  ) async {
     if (_user != null) {
       _user = UserModel(
         id: _user!.id,
@@ -140,9 +118,8 @@ class AuthProvider with ChangeNotifier {
         token: _user!.token,
         refreshToken: _user!.refreshToken,
       );
-      _saveSession(_user!);
+      await SecureStorageService.saveUser(_user!);
       notifyListeners();
     }
   }
 }
-

@@ -16,7 +16,10 @@ class SafeLocationsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF07161E),
         appBar: AppBar(
           backgroundColor: const Color(0xFF10232C),
-          title: const Text('Safe Emergency Facilities', style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Safe Emergency Facilities',
+            style: TextStyle(color: Colors.white),
+          ),
           bottom: const TabBar(
             isScrollable: true,
             indicatorColor: Color(0xFF00D4FF),
@@ -31,13 +34,31 @@ class SafeLocationsScreen extends StatelessWidget {
           ),
         ),
         body: prov.isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF00D4FF)))
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF00D4FF)),
+              )
             : TabBarView(
                 children: [
-                  _buildList(prov.shelters, Icons.night_shelter, const Color(0xFF00D4FF)),
-                  _buildList(prov.hospitals, Icons.local_hospital, const Color(0xFFFF4D4D)),
-                  _buildList(prov.police, Icons.local_police, const Color(0xFF3182CE)),
-                  _buildList(prov.fireStations, Icons.fire_truck, const Color(0xFFFFB000)),
+                  _buildList(
+                    prov.shelters,
+                    Icons.night_shelter,
+                    const Color(0xFF00D4FF),
+                  ),
+                  _buildList(
+                    prov.hospitals,
+                    Icons.local_hospital,
+                    const Color(0xFFFF4D4D),
+                  ),
+                  _buildList(
+                    prov.police,
+                    Icons.local_police,
+                    const Color(0xFF3182CE),
+                  ),
+                  _buildList(
+                    prov.fireStations,
+                    Icons.fire_truck,
+                    const Color(0xFFFFB000),
+                  ),
                 ],
               ),
       ),
@@ -47,7 +68,10 @@ class SafeLocationsScreen extends StatelessWidget {
   Widget _buildList(List<SafeLocationModel> items, IconData icon, Color color) {
     if (items.isEmpty) {
       return const Center(
-        child: Text('No facilities registered in this category.', style: TextStyle(color: Color(0xFFAAB6C3))),
+        child: Text(
+          'No facilities registered in this category.',
+          style: TextStyle(color: Color(0xFFAAB6C3)),
+        ),
       );
     }
     return ListView.builder(
@@ -67,16 +91,35 @@ class SafeLocationsScreen extends StatelessWidget {
               backgroundColor: color.withOpacity(0.2),
               child: Icon(icon, color: color),
             ),
-            title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+            title: Text(
+              item.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text(item.address, style: const TextStyle(color: Color(0xFFAAB6C3), fontSize: 12)),
+                Text(
+                  item.address,
+                  style: const TextStyle(
+                    color: Color(0xFFAAB6C3),
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 if (item.capacity != null)
-                  Text('Occupancy: ${item.occupied} / ${item.capacity}', style: TextStyle(color: color, fontSize: 11)),
-                Text('Phone: ${item.contactPhone}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                  Text(
+                    'Occupancy: ${item.occupied} / ${item.capacity}',
+                    style: TextStyle(color: color, fontSize: 11),
+                  ),
+                Text(
+                  'Phone: ${item.contactPhone}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                ),
               ],
             ),
             trailing: Container(
@@ -85,7 +128,14 @@ class SafeLocationsScreen extends StatelessWidget {
                 color: const Color(0xFF3DDC84).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(item.status, style: const TextStyle(color: Color(0xFF3DDC84), fontWeight: FontWeight.bold, fontSize: 10)),
+              child: Text(
+                item.status,
+                style: const TextStyle(
+                  color: Color(0xFF3DDC84),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
             ),
           ),
         );

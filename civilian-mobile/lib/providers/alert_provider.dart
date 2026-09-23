@@ -26,7 +26,8 @@ class AlertProvider with ChangeNotifier {
           title: 'RED ALERT: Flash Flood Evacuation Order',
           category: 'Evacuation',
           severity: 'CRITICAL',
-          message: 'All residents within 500m of Kaveri River must move to designated shelters immediately.',
+          message:
+              'All residents within 500m of Kaveri River must move to designated shelters immediately.',
           issuedBy: 'State Disaster Management Authority',
           timestamp: '20 mins ago',
         ),
@@ -35,7 +36,8 @@ class AlertProvider with ChangeNotifier {
           title: 'Heavy Rainfall & Cyclone Warning',
           category: 'Weather',
           severity: 'HIGH',
-          message: 'Rainfall exceeding 120mm forecasted over next 6 hours. Expect power outages.',
+          message:
+              'Rainfall exceeding 120mm forecasted over next 6 hours. Expect power outages.',
           issuedBy: 'Meteorological Department',
           timestamp: '1 hour ago',
         ),

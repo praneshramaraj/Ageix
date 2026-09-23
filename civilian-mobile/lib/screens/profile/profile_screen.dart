@@ -20,8 +20,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     final user = Provider.of<AuthProvider>(context, listen: false).user;
     _nameController = TextEditingController(text: user?.fullName ?? 'John Doe');
-    _phoneController = TextEditingController(text: user?.phone ?? '+91 98112 33441');
-    _medicalController = TextEditingController(text: user?.medicalNotes ?? 'Asthma, Penicillin Allergy');
+    _phoneController = TextEditingController(
+      text: user?.phone ?? '+91 98112 33441',
+    );
+    _medicalController = TextEditingController(
+      text: user?.medicalNotes ?? 'Asthma, Penicillin Allergy',
+    );
     _bloodGroup = user?.bloodGroup ?? 'O+';
   }
 
@@ -43,7 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: const Color(0xFF07161E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF10232C),
-        title: const Text('Medical & Personal Profile', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Medical & Personal Profile',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -99,7 +106,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Critical Medical Conditions & Allergies',
                   labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
-                  prefixIcon: Icon(Icons.medical_services, color: Color(0xFF00D4FF)),
+                  prefixIcon: Icon(
+                    Icons.medical_services,
+                    color: Color(0xFF00D4FF),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -110,7 +120,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   foregroundColor: const Color(0xFF07161E),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('SAVE PROFILE PARAMETERS', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'SAVE PROFILE PARAMETERS',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

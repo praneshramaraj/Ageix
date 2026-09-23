@@ -31,9 +31,9 @@ export function getBasemapStyle(styleId: BasemapStyleId): StyleSpecification {
       },
       'osm-raster': {
         type: 'raster',
-        tiles: [selectedTileUrl],
+        tiles: [selectedTileUrl, 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
         tileSize: 256,
-        attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
       'dem-terrain': {
         type: 'raster-dem',

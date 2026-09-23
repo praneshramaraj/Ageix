@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sos_provider.dart';
 import '../../providers/offline_provider.dart';
+import '../../services/location_service.dart';
 
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
@@ -17,9 +18,9 @@ class _SosScreenState extends State<SosScreen> {
   Timer? _holdTimer;
   final int _totalHoldMs = 3000;
   final int _tickMs = 50;
+  bool _isObtainingLocation = false;
 
   void _startHold() {
-    print('[TIMING] Button press started at: ${DateTime.now().toIso8601String()}');
     _holdProgress = 0.0;
     _holdTimer = Timer.periodic(Duration(milliseconds: _tickMs), (timer) {
       setState(() {
@@ -27,7 +28,6 @@ class _SosScreenState extends State<SosScreen> {
         if (_holdProgress >= 1.0) {
           _holdProgress = 1.0;
           _holdTimer?.cancel();
-          print('[TIMING] 3-second countdown completed at: ${DateTime.now().toIso8601String()}');
           _triggerEmergencySos();
         }
       });
@@ -36,7 +36,7 @@ class _SosScreenState extends State<SosScreen> {
 
   void _cancelHold() {
     _holdTimer?.cancel();
-    if (_holdProgress < 1.0) {
+    if (_holdProgress < 1.0 && !_isObtainingLocation) {
       setState(() {
         _holdProgress = 0.0;
       });
@@ -44,33 +44,58 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   void _triggerEmergencySos() async {
+    setState(() {
+      _isObtainingLocation = true;
+    });
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final sosProv = Provider.of<SosProvider>(context, listen: false);
     final offline = Provider.of<OfflineProvider>(context, listen: false);
 
     final u = auth.user;
 
+    // Acquire GPS location
+    final locResult = await LocationService.getCurrentLocation();
+
     final success = await sosProv.triggerSos(
       userName: u?.fullName ?? 'Civilian User',
-      username: u?.username ?? 'johndoe',
+      username: u?.username ?? 'civilian_user',
       userPhone: u?.phone ?? '+91 98112 33441',
-      age: u?.age ?? 28,
+      age: u?.age ?? 25,
       bloodGroup: u?.bloodGroup ?? 'O+',
-      gender: u?.gender ?? 'Male',
-      emergencyContact: u?.emergencyContact ?? '+91 78069 94340',
-      latitude: 12.9620,
-      longitude: 77.5880,
+      gender: u?.gender ?? 'Other',
+      emergencyContact: u?.emergencyContact ?? '+91 98112 33441',
+      latitude: locResult.latitude,
+      longitude: locResult.longitude,
       medicalInfo: u?.medicalNotes,
+      severity: 'critical',
+      disasterType: 'Emergency SOS',
+      locationName: locResult.isFallback
+          ? 'GPS Baseline Location'
+          : 'Live GPS Position',
       isOnline: offline.isOnline,
     );
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🚨 SOS DISPATCHED TO FASTAPI BACKEND & RESCUE COMMAND CENTER!'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+    if (mounted) {
+      setState(() {
+        _isObtainingLocation = false;
+        _holdProgress = 0.0;
+      });
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              locResult.isFallback
+                  ? '🚨 SOS DISPATCHED WITH BASELINE GPS (Location warning: ${locResult.error})'
+                  : '🚨 SOS DISPATCHED TO FASTAPI BACKEND & RESCUE COMMAND CENTER!',
+            ),
+            backgroundColor: locResult.isFallback
+                ? Colors.orangeAccent
+                : Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -90,9 +115,20 @@ class _SosScreenState extends State<SosScreen> {
         backgroundColor: const Color(0xFF10232C),
         title: Row(
           children: [
-            Image.asset('assets/images/aegisx_logo.png', width: 24, height: 24, fit: BoxFit.contain),
+            Image.asset(
+              'assets/images/aegisx_logo.png',
+              width: 24,
+              height: 24,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(width: 8),
-            const Text('EMERGENCY SOS', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            const Text(
+              'EMERGENCY SOS',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -105,7 +141,12 @@ class _SosScreenState extends State<SosScreen> {
             children: [
               const Text(
                 'HOLD BUTTON FOR 3 SECONDS',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -130,7 +171,9 @@ class _SosScreenState extends State<SosScreen> {
                         value: _holdProgress,
                         strokeWidth: 10,
                         backgroundColor: const Color(0xFF10232C),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.redAccent),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.redAccent,
+                        ),
                       ),
                     ),
                     Container(
@@ -150,10 +193,36 @@ class _SosScreenState extends State<SosScreen> {
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.sos, size: 64, color: Colors.white),
-                            SizedBox(height: 4),
-                            Text('PRESS & HOLD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          children: [
+                            if (_isObtainingLocation || sosProv.isSending) ...[
+                              const CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'DISPATCHING...',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ] else ...[
+                              const Icon(
+                                Icons.sos,
+                                size: 64,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'PRESS & HOLD',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -171,17 +240,20 @@ class _SosScreenState extends State<SosScreen> {
                     color: const Color(0xFF10232C),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: sosProv.activeSos!.status == 'En Route'
+                      color:
+                          sosProv.activeSos!.status == 'En Route' ||
+                              sosProv.activeSos!.status == 'RESOLVED'
                           ? const Color(0xFF3DDC84)
                           : Colors.orangeAccent,
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (sosProv.activeSos!.status == 'En Route'
-                                ? const Color(0xFF3DDC84)
-                                : Colors.orangeAccent)
-                            .withOpacity(0.2),
+                        color:
+                            (sosProv.activeSos!.status == 'En Route'
+                                    ? const Color(0xFF3DDC84)
+                                    : Colors.orangeAccent)
+                                .withOpacity(0.2),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
@@ -203,7 +275,7 @@ class _SosScreenState extends State<SosScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'SOS SENT SUCCESSFULLY',
+                              'SOS ACTIVE - STATUS: ${sosProv.activeSos!.status.toUpperCase()}',
                               style: TextStyle(
                                 color: sosProv.activeSos!.status == 'En Route'
                                     ? const Color(0xFF3DDC84)
@@ -218,34 +290,57 @@ class _SosScreenState extends State<SosScreen> {
                       const SizedBox(height: 6),
                       Text(
                         sosProv.activeSos!.status == 'En Route'
-                          ? '🚨 Rescue Team En Route to your live GPS coordinates!'
-                          : '⏳ Waiting for Rescue Team Dispatcher...',
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            ? '🚨 Rescue Team En Route to your live GPS coordinates!'
+                            : '⏳ Waiting for Rescue Team Dispatcher...',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Divider(color: Color(0xFF1E3440), height: 20),
                       Text(
-                        'Incident ID: ${sosProv.activeSos!.incidentId ?? "INC-2026-901"}',
-                        style: const TextStyle(color: Color(0xFF00D4FF), fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Assigned Team: ${sosProv.activeSos!.assignedTeam ?? "Pending Dispatcher Action"}',
-                        style: TextStyle(
-                          color: sosProv.activeSos!.assignedTeam != null ? const Color(0xFF3DDC84) : const Color(0xFFAAB6C3),
+                        'Incident ID: ${sosProv.activeSos!.incidentId ?? sosProv.activeSos!.id}',
+                        style: const TextStyle(
+                          color: Color(0xFF00D4FF),
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'ETA: ${sosProv.activeSos!.eta ?? "Calculating live route..."}',
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        'Assigned Team: ${sosProv.activeSos!.assignedTeam ?? "Pending Dispatcher Action"}',
+                        style: TextStyle(
+                          color: sosProv.activeSos!.assignedTeam != null
+                              ? const Color(0xFF3DDC84)
+                              : const Color(0xFFAAB6C3),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Mission Status: ${sosProv.activeSos!.status}',
+                        'Assigned Vehicle: ${sosProv.activeSos!.assignedVehicle ?? "Pending Dispatch"}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'ETA: ${sosProv.activeSos!.eta ?? "Calculating live route..."}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Mission Status: ${sosProv.activeSos!.missionStatus ?? sosProv.activeSos!.status}',
                         style: TextStyle(
-                          color: sosProv.activeSos!.status == 'En Route' ? const Color(0xFF3DDC84) : Colors.orangeAccent,
+                          color: sosProv.activeSos!.status == 'En Route'
+                              ? const Color(0xFF3DDC84)
+                              : Colors.orangeAccent,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),

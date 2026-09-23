@@ -13,7 +13,10 @@ class OfflineQueueScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF07161E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF10232C),
-        title: const Text('Offline Queue & Tile Cache', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Offline Queue & Tile Cache',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -33,13 +36,17 @@ class OfflineQueueScreen extends StatelessWidget {
                     children: [
                       Icon(
                         offline.isOnline ? Icons.wifi : Icons.wifi_off,
-                        color: offline.isOnline ? const Color(0xFF3DDC84) : const Color(0xFFFF4D4D),
+                        color: offline.isOnline
+                            ? const Color(0xFF3DDC84)
+                            : const Color(0xFFFF4D4D),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'NETWORK STATUS: ${offline.isOnline ? "ONLINE" : "OFFLINE QUEUE MODE"}',
                         style: TextStyle(
-                          color: offline.isOnline ? const Color(0xFF3DDC84) : const Color(0xFFFF4D4D),
+                          color: offline.isOnline
+                              ? const Color(0xFF3DDC84)
+                              : const Color(0xFFFF4D4D),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -55,11 +62,21 @@ class OfflineQueueScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: offline.totalQueued == 0 || offline.isSyncing ? null : () => offline.syncOfflineData(),
+              onPressed: offline.totalQueued == 0 || offline.isSyncing
+                  ? null
+                  : () => offline.syncOfflineData(),
               icon: offline.isSyncing
-                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.sync),
-              label: Text(offline.isSyncing ? 'SYNCING DATA...' : 'FORCE SYNC QUEUE TO FASTAPI'),
+              label: Text(
+                offline.isSyncing
+                    ? 'SYNCING DATA...'
+                    : 'FORCE SYNC QUEUE TO FASTAPI',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D4FF),
                 foregroundColor: const Color(0xFF07161E),
@@ -67,29 +84,58 @@ class OfflineQueueScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text('QUEUED ITEMS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const Text(
+              'QUEUED ITEMS',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             Expanded(
               child: offline.totalQueued == 0
                   ? const Center(
-                      child: Text('No offline items in queue.', style: TextStyle(color: Color(0xFFAAB6C3))),
+                      child: Text(
+                        'No offline items in queue.',
+                        style: TextStyle(color: Color(0xFFAAB6C3)),
+                      ),
                     )
                   : ListView(
                       children: [
-                        ...offline.queuedSos.map((s) => ListTile(
-                              tileColor: const Color(0xFF10232C),
-                              leading: const Icon(Icons.sos, color: Colors.redAccent),
-                              title: Text('SOS Request: ${s['userName']}', style: const TextStyle(color: Colors.white)),
-                              subtitle: Text('Lat: ${s['latitude']}, Lng: ${s['longitude']}',
-                                  style: const TextStyle(color: Color(0xFFAAB6C3))),
-                            )),
-                        ...offline.queuedReports.map((r) => ListTile(
-                              tileColor: const Color(0xFF10232C),
-                              leading: const Icon(Icons.report, color: Color(0xFFFFB000)),
-                              title: Text('Report: ${r['title']}', style: const TextStyle(color: Colors.white)),
-                              subtitle: Text('Category: ${r['category']}',
-                                  style: const TextStyle(color: Color(0xFFAAB6C3))),
-                            )),
+                        ...offline.queuedSos.map(
+                          (s) => ListTile(
+                            tileColor: const Color(0xFF10232C),
+                            leading: const Icon(
+                              Icons.sos,
+                              color: Colors.redAccent,
+                            ),
+                            title: Text(
+                              'SOS Request: ${s['userName']}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              'Lat: ${s['latitude']}, Lng: ${s['longitude']}',
+                              style: const TextStyle(color: Color(0xFFAAB6C3)),
+                            ),
+                          ),
+                        ),
+                        ...offline.queuedReports.map(
+                          (r) => ListTile(
+                            tileColor: const Color(0xFF10232C),
+                            leading: const Icon(
+                              Icons.report,
+                              color: Color(0xFFFFB000),
+                            ),
+                            title: Text(
+                              'Report: ${r['title']}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              'Category: ${r['category']}',
+                              style: const TextStyle(color: Color(0xFFAAB6C3)),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
             ),

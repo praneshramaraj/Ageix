@@ -79,17 +79,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
         {sidebarNavItems.map((item) => {
           const active = isCurrentActive(item.path);
           const Icon = item.icon;
-          const hasAccess = !item.requiredPermission || userPerms.includes(item.requiredPermission);
+          const hasAccess = !user || user.role === 'Administrator' || user.role === 'Disaster Commander' || !item.requiredPermission || userPerms.includes(item.requiredPermission);
 
           return (
             <button
               key={item.id}
               onClick={() => {
-                if (hasAccess) {
-                  navigate(item.path);
-                } else {
-                  navigate('/unauthorized');
-                }
+                navigate(item.path);
               }}
               title={isCollapsed ? item.label : undefined}
               className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all group ${

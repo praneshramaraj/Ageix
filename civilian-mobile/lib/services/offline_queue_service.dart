@@ -15,7 +15,9 @@ class OfflineQueueService {
   static Future<List<Map<String, dynamic>>> getQueuedSos() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(keySosQueue) ?? [];
-    return list.map((item) => jsonDecode(item) as Map<String, dynamic>).toList();
+    return list
+        .map((item) => jsonDecode(item) as Map<String, dynamic>)
+        .toList();
   }
 
   static Future<void> clearSosQueue() async {
@@ -33,7 +35,9 @@ class OfflineQueueService {
   static Future<List<Map<String, dynamic>>> getQueuedReports() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(keyReportQueue) ?? [];
-    return list.map((item) => jsonDecode(item) as Map<String, dynamic>).toList();
+    return list
+        .map((item) => jsonDecode(item) as Map<String, dynamic>)
+        .toList();
   }
 
   static Future<void> clearReportQueue() async {

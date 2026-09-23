@@ -322,5 +322,24 @@ export class DisasterGISService {
         },
       });
     }
+
+    // 6. Rescue Nodes & SOS Signal Layer
+    if (!map.getSource('rescue_nodes_src')) {
+      map.addSource('rescue_nodes_src', {
+        type: 'geojson',
+        data: this.getDisasterData('rescue_nodes'),
+      });
+      map.addLayer({
+        id: 'rescue_nodes_layer',
+        type: 'circle',
+        source: 'rescue_nodes_src',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': '#FF0055',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+    }
   }
 }

@@ -50,7 +50,9 @@ class _ReportDisasterScreenState extends State<ReportDisasterScreen> {
       if (ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Disaster Report Submitted to Rescue Command Center!'),
+            content: Text(
+              'Disaster Report Submitted to Rescue Command Center!',
+            ),
             backgroundColor: Color(0xFF3DDC84),
           ),
         );
@@ -67,7 +69,10 @@ class _ReportDisasterScreenState extends State<ReportDisasterScreen> {
       backgroundColor: const Color(0xFF07161E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF10232C),
-        title: const Text('Report Local Hazard', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Report Local Hazard',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -86,7 +91,9 @@ class _ReportDisasterScreenState extends State<ReportDisasterScreen> {
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
                     prefixIcon: Icon(Icons.category, color: Color(0xFF00D4FF)),
                   ),
-                  items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  items: _categories
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
                   onChanged: (v) => setState(() => _selectedCategory = v!),
                 ),
                 const SizedBox(height: 16),
@@ -108,7 +115,10 @@ class _ReportDisasterScreenState extends State<ReportDisasterScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Detailed Observations',
                     labelStyle: TextStyle(color: Color(0xFFAAB6C3)),
-                    prefixIcon: Icon(Icons.description, color: Color(0xFF00D4FF)),
+                    prefixIcon: Icon(
+                      Icons.description,
+                      color: Color(0xFF00D4FF),
+                    ),
                   ),
                   validator: (v) => v!.isEmpty ? 'Enter details' : null,
                 ),
@@ -123,21 +133,41 @@ class _ReportDisasterScreenState extends State<ReportDisasterScreen> {
                     prefixIcon: Icon(Icons.warning, color: Color(0xFFFFB000)),
                   ),
                   items: ['low', 'medium', 'high', 'critical']
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s.toUpperCase())))
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s.toUpperCase()),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => setState(() => _severity = v!),
                 ),
                 const SizedBox(height: 20),
                 OutlinedButton.icon(
-                  onPressed: () => setState(() => _attachedPhoto = !_attachedPhoto),
-                  icon: Icon(_attachedPhoto ? Icons.check_circle : Icons.camera_alt,
-                      color: _attachedPhoto ? const Color(0xFF3DDC84) : const Color(0xFF00D4FF)),
+                  onPressed: () =>
+                      setState(() => _attachedPhoto = !_attachedPhoto),
+                  icon: Icon(
+                    _attachedPhoto ? Icons.check_circle : Icons.camera_alt,
+                    color: _attachedPhoto
+                        ? const Color(0xFF3DDC84)
+                        : const Color(0xFF00D4FF),
+                  ),
                   label: Text(
-                    _attachedPhoto ? 'Photo Attached (Simulated)' : 'Attach Photo / Video',
-                    style: TextStyle(color: _attachedPhoto ? const Color(0xFF3DDC84) : const Color(0xFF00D4FF)),
+                    _attachedPhoto
+                        ? 'Photo Attached (Simulated)'
+                        : 'Attach Photo / Video',
+                    style: TextStyle(
+                      color: _attachedPhoto
+                          ? const Color(0xFF3DDC84)
+                          : const Color(0xFF00D4FF),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: _attachedPhoto ? const Color(0xFF3DDC84) : const Color(0xFF00D4FF)),
+                    side: BorderSide(
+                      color: _attachedPhoto
+                          ? const Color(0xFF3DDC84)
+                          : const Color(0xFF00D4FF),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
@@ -148,9 +178,14 @@ class _ReportDisasterScreenState extends State<ReportDisasterScreen> {
                     backgroundColor: const Color(0xFFFFB000),
                     foregroundColor: const Color(0xFF07161E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  child: const Text('SUBMIT DISASTER REPORT', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'SUBMIT DISASTER REPORT',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),

@@ -84,11 +84,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         fillColor: const Color(0xFF10232C),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Color(0xFF1E3440)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1E3440),
+                          ),
                         ),
-                        prefixIcon: const Icon(Icons.person, color: Color(0xFF00D4FF)),
+                        prefixIcon: const Icon(
+                          Icons.person,
+                          color: Color(0xFF00D4FF),
+                        ),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Enter username' : null,
+                      validator: (val) => (val == null || val.isEmpty)
+                          ? 'Enter username'
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -102,11 +109,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         fillColor: const Color(0xFF10232C),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Color(0xFF1E3440)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1E3440),
+                          ),
                         ),
-                        prefixIcon: const Icon(Icons.lock, color: Color(0xFF00D4FF)),
+                        prefixIcon: const Icon(
+                          Icons.lock,
+                          color: Color(0xFF00D4FF),
+                        ),
                       ),
-                      validator: (val) => (val == null || val.length < 6) ? 'Password must be 6+ chars' : null,
+                      validator: (val) => (val == null || val.length < 6)
+                          ? 'Password must be 6+ chars'
+                          : null,
                     ),
                   ],
                 ),
@@ -118,20 +132,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   backgroundColor: const Color(0xFF00D4FF),
                   foregroundColor: const Color(0xFF07161E),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: auth.isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF07161E)),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF07161E),
+                        ),
                       )
-                    : const Text('LOGIN TO CIVILIAN APP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    : const Text(
+                        'LOGIN TO CIVILIAN APP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  );
                 },
                 child: const Text(
                   "Don't have an account? Register Now",

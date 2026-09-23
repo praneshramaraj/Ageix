@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { IncidentDetailsDrawer, IncidentDetailData } from './IncidentDetailsDrawer';
 import { SosDispatchModal, SosDispatchData } from './SosDispatchModal';
+import { API_BASE } from '../../config/appConfig';
 
 export const IncidentQueue: React.FC<{
   onAssignClick?: (incident: IncidentDetailData) => void;
@@ -31,9 +32,11 @@ export const IncidentQueue: React.FC<{
 
   const fetchIncidents = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/sos');
+      const res = await fetch(`${API_BASE}/sos`);
       if (res.ok) {
+
         const data = await res.json();
+
         const list = data.sosList || [];
         const formatted: IncidentDetailData[] = list.map((item: any) => ({
           id: item.id,
