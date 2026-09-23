@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegisx_fastapi
+    restart: always
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password_2026
+      - POSTGRES_DB=aegisx_db
+      - REDIS_URL=redis://redis:6379/0
+      - TILESERVER_URL=http://tileserver:8080
+      - VALHALLA_URL=http://valhalla:8002
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: aegisx_postgis
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password_2026
+      POSTGRES_DB: aegisx_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: aegisx_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  tileserver:
+    image: maptiler/tileserver-gl:latest
+    container_name: aegisx_tileserver
+    restart: always
+    ports:
+      - "8080:8080"
+    command: ["--mbtiles", "/data/switzerland.mbtiles"]
+    volumes:
+      - ./tiles:/data
+
+  valhalla:
+    image: gisops/valhalla:latest
+    container_name: aegisx_valhalla
+    restart: always
+    ports:
+      - "8002:8002"
+
+  nginx:
+    image: nginx:alpine
+    container_name: aegisx_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - fastapi
+
+volumes:
+  postgres_data:

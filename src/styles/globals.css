@@ -1,0 +1,58 @@
+@import './theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-[#07161E] text-white min-h-screen font-sans;
+  }
+
+  /* Custom EOC Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #07161E;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1E3440;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00D4FF;
+  }
+}
+
+@layer utilities {
+  .eoc-card {
+    background: #10232C;
+    border: 1px solid #1E3440;
+    border-radius: 14px;
+  }
+
+  .eoc-card-glow {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
+  }
+
+  .glow-danger {
+    box-shadow: 0 0 15px rgba(255, 75, 85, 0.2);
+  }
+
+  .glow-warning {
+    box-shadow: 0 0 15px rgba(255, 176, 0, 0.2);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 15px rgba(61, 220, 132, 0.2);
+  }
+}
