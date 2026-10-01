@@ -23,3 +23,32 @@ def test_register_and_login(client):
     assert response_login.status_code == 200
     login_data = response_login.json()
     assert "access_token" in login_data
+
+def test_login_with_username(client):
+    login_payload = {
+        "username": "rescuer",
+        "password": "password123"
+    }
+    response = client.post("/api/v1/auth/login", json=login_payload)
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+def test_login_invalid_password(client):
+    login_payload = {
+        "email": "rescuer@aegisx.org",
+        "password": "wrongpassword"
+    }
+    response = client.post("/api/v1/auth/login", json=login_payload)
+    assert response.status_code == 401
+    assert "access_token" not in response.json()
+
+def test_login_nonexistent_user_no_auto_provision(client):
+    from app.api.v1.auth import CIVILIAN_USERS_DB
+    login_payload = {
+        "email": "ghost_user@aegisx.org",
+        "password": "wrongpassword"
+    }
+    response = client.post("/api/v1/auth/login", json=login_payload)
+    assert response.status_code == 401
+    assert "ghost_user" not in CIVILIAN_USERS_DB
+    assert "ghost_user@aegisx.org" not in [u.get("email") for u in CIVILIAN_USERS_DB.values()]

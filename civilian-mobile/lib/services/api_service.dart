@@ -83,8 +83,13 @@ class ApiService {
   }
 
   // Auth: Login
-  static Future<UserModel> login(String username, String password) async {
-    final payload = jsonEncode({'username': username, 'password': password});
+  static Future<UserModel> login(String identifier, String password) async {
+    final payload = jsonEncode({
+      'identifier': identifier,
+      'username': identifier,
+      'email': identifier,
+      'password': password,
+    });
 
     final response = await _executeWithRetry(
       () => _client.post(

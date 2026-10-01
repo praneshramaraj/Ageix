@@ -226,7 +226,7 @@ async def create_sos(sos: SosCreateSchema, db: Session = Depends(get_db)):
         "AEGISX EOC: SOS distress signal received. Waiting for dispatcher assignment."
     )
 
-    return {"message": "SOS received, stored in DB & broadcasted", "sos": sos_record}
+    return {"message": "SOS received & broadcasted", "sos": sos_record}
 
 @router.get("")
 def list_sos():
