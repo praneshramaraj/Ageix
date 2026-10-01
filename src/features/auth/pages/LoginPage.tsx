@@ -2,72 +2,108 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
-import { loginSuccess } from '../authSlice';
-import { UserRole } from '../../../types/auth';
+import { loginSuccess, loginFailure } from '../authSlice';
+import { UserProfile, UserRole } from '../../../types/auth';
+import { API_BASE } from '../../../config/appConfig';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [email, setEmail] = useState('commander@aegisx.gov');
-  const [password, setPassword] = useState('••••••••••••');
+  const [password, setPassword] = useState('password123');
   const [selectedRole, setSelectedRole] = useState<UserRole>('Disaster Commander');
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      let fullName = 'Commander Alex Vance';
-      let department = 'HQ Emergency Command Center';
-      let callsign = 'ALPHA-1';
+    try {
+      const baseUrl = API_BASE.replace(/\/api\/v1\/?$/, '');
+      const loginUrl = `${baseUrl}/api/v1/auth/login`;
 
-      if (selectedRole === 'Administrator') {
-        fullName = 'Director Elena Rostova';
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: email.trim(),
+          username: email.trim(),
+          email: email.trim(),
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMsg = `Authentication failed (${response.status})`;
+        try {
+          const errData = await response.json();
+          errorMsg = errData.detail || errData.message || errorMsg;
+        } catch {
+          // Response body was not JSON
+        }
+        dispatch(loginFailure());
+        setError(errorMsg);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      const user = data.user || {};
+
+      const effectiveRole: UserRole = (user.roles && user.roles[0]) ? (user.roles[0] as UserRole) : selectedRole;
+      let department = user.department || 'HQ Emergency Command Center';
+      let callsign = user.callsign || 'ALPHA-1';
+
+      if (effectiveRole === 'Administrator') {
         department = 'Global EOC Systems';
         callsign = 'OVERLORD-1';
-      } else if (selectedRole === 'Dispatcher') {
-        fullName = 'Officer Marcus Brody';
+      } else if (effectiveRole === 'Dispatcher') {
         department = 'Metro 911 Dispatch Hub';
         callsign = 'DISPATCH-9';
-      } else if (selectedRole === 'Rescue Team Leader') {
-        fullName = 'Captain Sarah Jenkins';
+      } else if (effectiveRole === 'Rescue Team Leader') {
         department = 'Tactical Rescue Squad 4';
         callsign = 'RESCUE-4';
-      } else if (selectedRole === 'Field Officer') {
-        fullName = 'Officer David Miller';
+      } else if (effectiveRole === 'Field Officer') {
         department = 'Coastal Field Unit';
         callsign = 'FIELD-12';
-      } else if (selectedRole === 'Viewer') {
-        fullName = 'Observer Taylor Swift';
+      } else if (effectiveRole === 'Viewer') {
         department = 'Public Media Desk';
         callsign = 'VIEWER-0';
       }
 
+      const userProfile: UserProfile = {
+        id: user.id || 'usr_' + Date.now(),
+        email: user.email || email,
+        username: user.username || (email.includes('@') ? email.split('@')[0] : email),
+        fullName: user.fullName || (user.username ? user.username.toUpperCase() : 'Commander Alex Vance'),
+        role: effectiveRole,
+        department,
+        callsign,
+        badgeNumber: user.badgeNumber || ('AGX-' + Math.floor(1000 + Math.random() * 9000)),
+      };
+
       dispatch(
         loginSuccess({
-          token: 'jwt_access_token_' + Date.now(),
-          refreshToken: 'jwt_refresh_token_' + Date.now(),
-          user: {
-            id: 'usr_' + Math.random().toString(36).substring(2, 9),
-            email,
-            username: email.split('@')[0],
-            fullName,
-            role: selectedRole,
-            department,
-            callsign,
-            badgeNumber: 'AGX-' + Math.floor(1000 + Math.random() * 9000),
-          },
+          token: data.access_token || data.token || '',
+          refreshToken: data.refresh_token || '',
+          user: userProfile,
         })
       );
 
       setLoading(false);
       navigate('/dashboard');
-    }, 600);
+    } catch (err: any) {
+      dispatch(loginFailure());
+      setError(err?.message || 'Network error: Failed to connect to authentication server');
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,12 +158,12 @@ export const LoginPage: React.FC = () => {
             <div className="relative">
               <User className="w-4 h-4 absolute left-3 top-3 text-[#00D4FF]" />
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full bg-[#07161E] border border-[#1E3440] rounded-lg pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#6C7A89] focus:outline-none focus:border-[#00D4FF]"
-                placeholder="operator@aegisx.gov"
+                placeholder="operator@aegisx.gov or username"
               />
             </div>
           </div>
@@ -144,6 +180,7 @@ export const LoginPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full bg-[#07161E] border border-[#1E3440] rounded-lg pl-9 pr-3 py-2.5 text-xs text-white placeholder-[#6C7A89] focus:outline-none focus:border-[#00D4FF]"
+                placeholder="••••••••••••"
               />
             </div>
           </div>

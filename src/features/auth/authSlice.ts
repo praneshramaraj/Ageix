@@ -13,11 +13,11 @@ const INITIAL_USER: UserProfile = {
 };
 
 const initialState: AuthState = {
-  user: INITIAL_USER,
-  token: 'mock_aegisx_jwt_token_active',
-  refreshToken: 'mock_aegisx_jwt_refresh_active',
-  isAuthenticated: true,
-  rememberMe: true,
+  user: null,
+  token: null,
+  refreshToken: null,
+  isAuthenticated: false,
+  rememberMe: false,
   isLoading: false,
 };
 
@@ -33,6 +33,13 @@ export const authSlice = createSlice({
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
+      state.isLoading = false;
+    },
+    loginFailure: (state) => {
+      state.user = null;
+      state.token = null;
+      state.refreshToken = null;
+      state.isAuthenticated = false;
       state.isLoading = false;
     },
     logout: (state) => {
@@ -89,5 +96,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { setLoading, loginSuccess, logout, switchRole } = authSlice.actions;
+export const { setLoading, loginSuccess, loginFailure, logout, switchRole } = authSlice.actions;
 export default authSlice.reducer;
